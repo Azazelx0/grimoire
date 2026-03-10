@@ -1,0 +1,47 @@
+# Basic transforms
+:
+l
+u
+c
+C
+
+# Append common chars
+$!
+$@
+$#
+$$
+$1
+
+# Multi-char append
+$1$2$3
+$2$0$2$5
+
+# Prepend
+^!
+^@
+
+# Reverse
+r
+
+# Duplicate
+d
+
+# Leet speak substitutions
+sa4
+se3
+si1
+so0
+ss5
+st7
+sg9
+sz2
+
+# Composite rules
+c$!
+c$1
+c$1$2$3
+u$!
+r$!
+sa4se3si1so0
+c$2$0$2$5
+c$2$0$2$6

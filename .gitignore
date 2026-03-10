@@ -1,0 +1,35 @@
+# Build
+/build/
+/dist/
+*.egg-info/
+*.egg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output files
+*.json
+!examples/*.json
+!grimoire/data/*.json
+
+# Downloaded dictionaries
+dictionaries/
+
+# Old Go artifacts
+grimoire.exe
+grimoire-linux-amd64
+go.sum
