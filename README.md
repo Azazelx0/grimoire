@@ -1,15 +1,5 @@
 # GRIMOIRE 🔮
 
-```
-   ██████╗ ██████╗ ██╗███╗   ███╗ ██████╗ ██╗██████╗ ███████╗
-  ██╔════╝ ██╔══██╗██║████╗ ████║██╔═══██╗██║██╔══██╗██╔════╝
-  ██║  ███╗██████╔╝██║██╔████╔██║██║   ██║██║██████╔╝█████╗
-  ██║   ██║██╔══██╗██║██║╚██╔╝██║██║   ██║██║██╔══██╗██╔══╝
-  ╚██████╔╝██║  ██║██║██║ ╚═╝ ██║╚██████╔╝██║██║  ██║███████╗
-   ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═╝╚══════╝
-          Where words are forged into weapons.
-```
-
 > **An advanced wordlist/password generator** combining CeWL-style web crawling, CUPP-style target profiling, Hashcat-compatible mutations, OSINT scraping, Markov generation, and more — all in pure Python with a beautiful interactive TUI.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
@@ -69,23 +59,7 @@ grimoire --help       # Full flag reference
 
 Running `grimoire` without flags launches the interactive mode selector:
 
-```
-? Select mode
-❯ 🕷  Web Crawl         — Extract words from a URL
-  🎯 Profile Target     — CUPP-style personal profiling
-  📈 Improve Dict       — Mutate an existing wordlist
-  📥 Download Lists     — Fetch curated wordlists
-  🔐 Alecto DB          — Default credentials database
-  🔀 Combo Attack       — Merge two wordlists
-  🎭 Mask Generator     — Pattern-based generation
-  🔍 OSINT Scraper      — Social media profiling
-  📡 Wi-Fi Wordlist     — ESSID/vendor-based passwords
-  🌍 Locale Packs       — Language-specific passwords
-  📊 Analyze Wordlist   — Statistics & analysis
-  🔗 Chain Pipeline     — Multi-step mutations
-  📝 Run Recipe         — Execute YAML recipe
-  🧬 Markov Generator   — Statistical password generation
-```
+![GRIMOIRE Interactive Menu](docs/screenshots/interactive-menu.png)
 
 ---
 
