@@ -19,7 +19,7 @@ BANNER_ART = r"""
 def print_banner():
     banner_text = Text(BANNER_ART, style="bold red")
     tagline = Text("\n       Where words are forged into weapons.", style="bold yellow")
-    version = Text(f"                         v{__version__}", style="dim")
+    version = Text(f"\n       v{__version__} • https://github.com/Azazelx0/grimoire", style="dim")
     full = banner_text + tagline + version
 
     console.print(Panel(full, border_style="red", padding=(0, 1)))
