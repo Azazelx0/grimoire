@@ -1,5 +1,6 @@
 """GRIMOIRE CLI — Click-based command-line interface."""
 
+import sys
 import click
 from grimoire import banner as b
 from grimoire.repl import ReplState, run as run_repl
@@ -34,6 +35,7 @@ from grimoire.repl import ReplState, run as run_repl
 @click.option("--combo", nargs=2, default=None, help="Combo attack: two wordlist files")
 @click.option("--mask", default="", help="Mask pattern: ?u?l?l?d?d?d")
 @click.option("--osint", default="", help="OSINT: target username")
+@click.option("--osint-platforms", default="github,instagram,x,linkedin", help="OSINT platforms: github,instagram,x,linkedin")
 @click.option("--wifi-essid", default="", help="Wi-Fi ESSID for wordlist generation")
 @click.option("--wifi-vendor", default="", help="Wi-Fi router vendor")
 @click.option("--locale", default="", help="Locale codes: en,tr,de")
@@ -48,7 +50,7 @@ from grimoire.repl import ReplState, run as run_repl
 @click.option("--sort-freq/--no-sort-freq", default=False, help="Sort by frequency")
 @click.option("--dedup-fuzzy/--no-dedup-fuzzy", default=False, help="Fuzzy deduplication")
 @click.option("--no-banner", is_flag=True, default=False, help="Suppress ASCII banner")
-def main(**kwargs):
+def _cli_main(**kwargs):
     """GRIMOIRE — Where words are forged into weapons.
 
     Advanced wordlist generator combining CeWL web crawling with CUPP target profiling,
@@ -114,12 +116,226 @@ def main(**kwargs):
         _handle_crawl(kwargs)
         return
 
-    # No flags → interactive wizard
-    from grimoire.wizard import run as run_wizard
-    config, mode = run_wizard()
-    if mode == "exit":
-        return
-    _handle_wizard_result(mode, config)
+    # No flags → interactive wizard loop
+    from grimoire.wizard import run as run_wizard, post_process_menu
+    while True:
+        config, mode = run_wizard()
+        if mode == "exit":
+            return
+        if mode == "update":
+            from grimoire.updater import run_update
+            run_update()
+            continue
+        words = _execute_wizard_mode(mode, config)
+        if words is not None and len(words) > 0:
+            words = post_process_menu(words)
+
+
+# ──────────────────────────────────────────────────────────────
+# WIZARD MODE EXECUTION — handles the interactive wizard flow
+# ──────────────────────────────────────────────────────────────
+
+
+def _execute_wizard_mode(mode, config) -> list[str] | None:
+    """Execute a wizard mode and return generated words, or None for display-only modes."""
+    from grimoire.output import write_file
+
+    if mode == "crawl":
+        from grimoire.crawler.static import crawl_static
+        from grimoire.dedup import exact_dedup
+        from grimoire.mutator.basic import mutate_all
+        from grimoire.mutator.rules import parse_rule_file, apply_rules
+
+        url = config.get("url", "")
+        b.info(f"Starting crawl: {url}")
+        result = crawl_static(
+            url=url, depth=config.get("depth", 2), delay=config.get("delay", 0),
+            proxy=config.get("proxy", ""), cookie=config.get("cookie", ""),
+            random_ua=config.get("random_ua", False),
+            min_length=config.get("min_length", 5), max_length=config.get("max_length", 0),
+            emails=config.get("emails", False), meta=config.get("meta", False),
+            js_strings=config.get("js", False),
+            on_page=lambda u, r: b.success(f"Page: {u} ({len(r.words)} words)"),
+        )
+        words = result.word_list()
+
+        if config.get("mutate"):
+            mutations = config.get("mutations", {})
+            opts = {
+                "leet": mutations.get("leet", False),
+                "case": mutations.get("case", False),
+                "numbers": mutations.get("numbers", False),
+                "symbols": mutations.get("symbols", False),
+                "years": mutations.get("years", False),
+                "reverse": mutations.get("reverse", False),
+                "num_from": 0, "num_to": 99,
+            }
+            words = mutate_all(words, opts)
+
+        rule_file = config.get("rule_file", "")
+        if rule_file:
+            rules = parse_rule_file(rule_file)
+            words.extend(apply_rules(words, rules))
+
+        words = exact_dedup(words)
+        b.success(f"Crawl complete: {len(words)} unique words")
+        return words
+
+    elif mode == "profile":
+        from grimoire.profiler import generate
+        from grimoire.dedup import exact_dedup
+        profile_data = {k: v for k, v in config.items() if k not in ("output", "format")}
+        profile_data["leet"] = True
+        profile_data["special_chars"] = True
+        words = exact_dedup(generate(profile_data))
+        b.success(f"Profile: {len(words)} words")
+        return words
+
+    elif mode == "improve":
+        from grimoire.improver import improve
+        words = improve(config.get("input_file", ""), {
+            "leet": config.get("leet", True),
+            "case": config.get("case", True),
+            "numbers": config.get("numbers", True),
+            "symbols": config.get("symbols", True),
+            "rule_file": config.get("rule_file", ""),
+            "fuzzy_dedup": config.get("fuzzy_dedup", False),
+        })
+        b.success(f"Improved: {len(words)} words")
+        return words
+
+    elif mode == "download":
+        _handle_download(config.get("category", ""))
+        return None
+
+    elif mode == "alecto":
+        _handle_alecto_wizard(config)
+        return None
+
+    elif mode == "combo":
+        from grimoire.mutator.combo import combo_from_files
+        words = combo_from_files(config.get("file1", ""), config.get("file2", ""), config.get("separator", ""))
+        b.success(f"Combo: {len(words)} words")
+        return words
+
+    elif mode == "mask":
+        from grimoire.mask import generate_from_mask
+        words = generate_from_mask(config.get("mask", ""), max_output=config.get("max_output", 100000))
+        b.success(f"Mask: {len(words)} words")
+        return words
+
+    elif mode == "osint":
+        from grimoire.osint import gather_osint
+        platforms = config.get("platforms", None)
+        username = config.get("username", "")
+        b.info(f"OSINT scraping: {username}...")
+        words = gather_osint(username, platforms)
+        b.success(f"OSINT: {len(words)} keywords")
+        return words
+
+    elif mode == "wifi":
+        from grimoire.wifi import generate_wifi_wordlist
+        words = generate_wifi_wordlist(essid=config.get("essid", ""), vendor=config.get("vendor", ""))
+        b.success(f"Wi-Fi: {len(words)} words")
+        return words
+
+    elif mode == "locale":
+        from grimoire.locale_packs import load_multiple
+        words = load_multiple(config.get("locales", []))
+        b.success(f"Locale: {len(words)} words")
+        return words
+
+    elif mode == "stats":
+        _handle_stats(config.get("input_file", ""))
+        return None
+
+    elif mode == "chain":
+        from grimoire.chain import run_chain, parse_chain_string
+        words = []
+        input_file = config.get("input_file", "")
+        if input_file:
+            with open(input_file, "r") as f:
+                words = [l.strip() for l in f if l.strip()]
+        steps = parse_chain_string(config.get("chain", ""))
+        words = run_chain(words, steps)
+        b.success(f"Chain: {len(words)} words")
+        return words
+
+    elif mode == "recipe":
+        _handle_recipe(config.get("recipe_file", ""))
+        return None
+
+    elif mode == "markov":
+        from grimoire.markov import train_from_file
+        model = train_from_file(config.get("train_file", ""))
+        words = model.generate(
+            count=config.get("count", 10000),
+            min_len=config.get("min_len", 6),
+            max_len=config.get("max_len", 16),
+        )
+        b.success(f"Markov: {len(words)} words")
+        return words
+
+    return []
+
+
+def _handle_alecto_wizard(config):
+    """Handle the enhanced Alecto wizard with search/list/dump/export."""
+    from grimoire import alecto as a
+    from rich.table import Table
+
+    action = config.get("action", "dump")
+
+    if action == "search":
+        vendor = config.get("vendor", "")
+        results = a.search(vendor)
+        if not results:
+            b.warning(f"No entries for: {vendor}")
+            return
+        table = Table(border_style="cyan")
+        table.add_column("Vendor", style="cyan")
+        table.add_column("Username", style="green")
+        table.add_column("Password", style="yellow")
+        for e in results:
+            table.add_row(e.vendor, e.username, e.password)
+        b.console.print(table)
+        b.info(f"{len(results)} entries found.")
+
+    elif action == "list":
+        vendor_list = a.vendors()
+        b.info(f"Alecto DB: {len(vendor_list)} vendors")
+        for v in vendor_list:
+            b.console.print(f"  [cyan]•[/cyan] {v}")
+
+    elif action == "dump":
+        entries = a.dump()
+        table = Table(border_style="cyan")
+        table.add_column("Vendor", style="cyan")
+        table.add_column("Username", style="green")
+        table.add_column("Password", style="yellow")
+        for e in entries:
+            table.add_row(e.vendor, e.username, e.password)
+        b.console.print(table)
+        b.info(f"{len(entries)} total entries.")
+
+    elif action == "export":
+        export_type = config.get("export_type", "Both")
+        output = config.get("output", "alecto-export.txt")
+        entries = a.dump()
+        with open(output, "w", encoding="utf-8") as f:
+            for e in entries:
+                if "Username" in export_type:
+                    f.write(f"{e.username}\n")
+                elif "Password" in export_type:
+                    f.write(f"{e.password}\n")
+                else:
+                    f.write(f"{e.vendor},{e.username},{e.password}\n")
+        b.success(f"Exported {len(entries)} entries to {output}")
+
+
+# ──────────────────────────────────────────────────────────────
+# CLI FLAG HANDLERS — for direct --flag usage (no wizard)
+# ──────────────────────────────────────────────────────────────
 
 
 def _handle_crawl(kw):
@@ -182,7 +398,6 @@ def _handle_profile(kw):
     from grimoire.profiler import generate
     from grimoire.dedup import exact_dedup
     from grimoire.output import write_file
-    import shlex
 
     pd = {"leet": True, "special_chars": True}
     for pair in kw["profile"].split():
@@ -292,8 +507,9 @@ def _handle_osint(kw):
     from grimoire.output import write_file
 
     username = kw["osint"]
-    b.info(f"OSINT scraping: {username}...")
-    keywords = gather_osint(username)
+    platforms = [p.strip() for p in kw.get("osint_platforms", "github,instagram,x,linkedin").split(",") if p.strip()]
+    b.info(f"OSINT scraping: {username} on {', '.join(platforms)}...")
+    keywords = gather_osint(username, platforms)
     b.success(f"Extracted {len(keywords)} keywords")
     if kw["output"]:
         write_file(keywords, kw["output"], kw["fmt"])
@@ -395,115 +611,16 @@ def _handle_stats(filepath):
         b.console.print(line)
 
 
-def _handle_wizard_result(mode, config):
-    from grimoire.output import write_file
+# ──────────────────────────────────────────────────────────────
+# ENTRY POINT
+# ──────────────────────────────────────────────────────────────
 
-    if mode == "crawl":
-        _handle_crawl({
-            "url": config.get("url", ""), "depth": config.get("depth", 2),
-            "delay": config.get("delay", 0), "proxy": config.get("proxy", ""),
-            "cookie": "", "random_ua": config.get("random_ua", False),
-            "min_length": config.get("min_length", 5), "max_length": config.get("max_length", 0),
-            "emails": config.get("emails", False), "meta": config.get("meta", False),
-            "js": config.get("js", False), "mode": config.get("mode", "auto"),
-            "mutate": config.get("mutate", False), "leet": False, "case": False,
-            "append_numbers": False, "append_symbols": False, "rule_file": "",
-            "dedup_fuzzy": False, "sort_freq": False,
-            "output": config.get("output", ""), "fmt": config.get("format", "txt"),
-        })
-    elif mode == "profile":
-        from grimoire.profiler import generate
-        from grimoire.dedup import exact_dedup
-        profile_data = {k: v for k, v in config.items() if k not in ("output", "format")}
-        profile_data["leet"] = True
-        profile_data["special_chars"] = True
-        words = exact_dedup(generate(profile_data))
-        b.success(f"Profile: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, config.get("format", "txt"))
-            b.success(f"Saved to {output}")
-        run_repl(ReplState(words=words))
-    elif mode == "improve":
-        _handle_improve({
-            "improve_file": config.get("input_file", ""), "rule_file": "",
-            "dedup_fuzzy": config.get("fuzzy_dedup", False),
-            "output": config.get("output", ""), "fmt": "txt",
-        })
-    elif mode == "download":
-        _handle_download(config.get("category", ""))
-    elif mode == "alecto":
-        _handle_alecto("")
-    elif mode == "combo":
-        from grimoire.mutator.combo import combo_from_files
-        words = combo_from_files(config.get("file1", ""), config.get("file2", ""), config.get("separator", ""))
-        b.success(f"Combo: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-            b.success(f"Saved to {output}")
-        run_repl(ReplState(words=words))
-    elif mode == "mask":
-        from grimoire.mask import generate_from_mask
-        words = generate_from_mask(config.get("mask", ""), max_output=config.get("max_output", 100000))
-        b.success(f"Mask: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-            b.success(f"Saved to {output}")
-        run_repl(ReplState(words=words))
-    elif mode == "osint":
-        from grimoire.osint import gather_osint
-        words = gather_osint(config.get("username", ""))
-        b.success(f"OSINT: {len(words)} keywords")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-        run_repl(ReplState(words=words))
-    elif mode == "wifi":
-        from grimoire.wifi import generate_wifi_wordlist
-        words = generate_wifi_wordlist(essid=config.get("essid", ""), vendor=config.get("vendor", ""))
-        b.success(f"Wi-Fi: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-        run_repl(ReplState(words=words))
-    elif mode == "locale":
-        from grimoire.locale_packs import load_multiple
-        words = load_multiple(config.get("locales", []))
-        b.success(f"Locale: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-        run_repl(ReplState(words=words))
-    elif mode == "stats":
-        _handle_stats(config.get("input_file", ""))
-    elif mode == "chain":
-        from grimoire.chain import run_chain, parse_chain_string
-        words = []
-        input_file = config.get("input_file", "")
-        if input_file:
-            with open(input_file, "r") as f:
-                words = [l.strip() for l in f if l.strip()]
-        steps = parse_chain_string(config.get("chain", ""))
-        words = run_chain(words, steps)
-        b.success(f"Chain: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-        run_repl(ReplState(words=words))
-    elif mode == "recipe":
-        _handle_recipe(config.get("recipe_file", ""))
-    elif mode == "markov":
-        from grimoire.markov import train_from_file
-        model = train_from_file(config.get("train_file", ""))
-        words = model.generate(
-            count=config.get("count", 10000),
-            min_len=config.get("min_len", 6),
-            max_len=config.get("max_len", 16),
-        )
-        b.success(f"Markov: {len(words)} words")
-        output = config.get("output", "")
-        if output:
-            write_file(words, output, "txt")
-        run_repl(ReplState(words=words))
+
+def main():
+    """Entry point that intercepts 'update' before Click."""
+    if len(sys.argv) > 1 and sys.argv[1] == "update":
+        b.print_banner()
+        from grimoire.updater import run_update
+        run_update()
+    else:
+        _cli_main()

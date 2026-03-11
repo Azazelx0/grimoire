@@ -18,7 +18,7 @@ from grimoire.policy import apply_policy, parse_policy_string
 
 COMMANDS = [
     "help", "stats", "export", "mutate", "profile", "alecto",
-    "download", "improve", "dedup", "policy", "analyze",
+    "download", "improve", "dedup", "policy", "analyze", "osint",
     "save", "load", "set", "clear", "exit", "quit",
 ]
 
@@ -106,6 +106,16 @@ def run(state: ReplState):
                 banner.error("Usage: load <file>")
                 continue
             _cmd_load(state, parts[1])
+        elif cmd == "osint":
+            if len(parts) < 2:
+                banner.error("Usage: osint <username> [--platforms github,x,instagram,linkedin]")
+                continue
+            platform_flags = None
+            username = parts[1]
+            for i, p in enumerate(parts):
+                if p == "--platforms" and i + 1 < len(parts):
+                    platform_flags = [x.strip() for x in parts[i + 1].split(",") if x.strip()]
+            _cmd_osint(state, username, platform_flags)
         elif cmd == "clear":
             state.words = []
             state.emails = []
@@ -131,6 +141,7 @@ def _cmd_help():
         ("improve <file>", "Enhance existing wordlist"),
         ("dedup [--fuzzy]", "Deduplicate wordlist"),
         ("policy min:8 upper:1 ...", "Filter by password policy"),
+        ("osint <user> [--platforms ...]", "OSINT scrape (github,x,instagram,linkedin)"),
         ("set <key> <value>", "Change session setting"),
         ("save <file>", "Save wordlist to file"),
         ("load <file>", "Load wordlist from file"),
@@ -318,3 +329,12 @@ def _cmd_load(state: ReplState, filename: str):
         banner.success(f"Loaded {len(words)} words from {filename}. Total: {len(state.words)}")
     except Exception as e:
         banner.error(f"Load failed: {e}")
+
+
+def _cmd_osint(state: ReplState, username: str, platforms: list[str] | None = None):
+    from grimoire.osint import gather_osint
+    banner.info(f"OSINT scraping: {username}...")
+    keywords = gather_osint(username, platforms)
+    state.words.extend(keywords)
+    state.words = exact_dedup(state.words)
+    banner.success(f"OSINT: {len(keywords)} keywords extracted. Total: {len(state.words)}")

@@ -21,7 +21,7 @@
 | 🧬 **Mutation Engine** | Leet speak, case variants, append numbers/symbols/years, reverse, duplicate |
 | 📜 **Hashcat Rules** | Full `.rule` file parser: `:`, `l`, `u`, `c`, `C`, `r`, `d`, `$X`, `^X`, `sXY`, `TN` |
 | 📧 **Email Harvesting** | RFC-compliant email extraction during crawl |
-| 🔍 **OSINT Scraper** | Extract keywords from GitHub profiles and public pages |
+| 🔍 **OSINT Scraper** | Extract keywords from Instagram, X (Twitter), LinkedIn, and GitHub profiles |
 | 🔀 **Combo Attack** | Merge two wordlists by concatenating every pair |
 | 🎭 **Mask Generator** | Pattern-based generation (`?u?l?l?d?d` → `Ab3c12`) |
 | 📡 **Wi-Fi Wordlist** | ESSID/vendor-based password generation with common patterns |
@@ -79,6 +79,8 @@ Running `grimoire` without flags launches the interactive mode selector:
   🔗 Chain Pipeline     — Multi-step mutations
   📝 Run Recipe         — Execute YAML recipe
   🧬 Markov Generator   — Statistical password generation
+  ─────────────────────────────────────────────
+  🔄 Update GRIMOIRE    — Pull latest from GitHub
 ```
 
 ---
@@ -132,7 +134,11 @@ grimoire --combo wordlist1.txt wordlist2.txt -o combined.txt
 ### OSINT Scraper
 
 ```bash
+# Scrape all platforms (Instagram, X, LinkedIn, GitHub)
 grimoire --osint username -o keywords.txt
+
+# Specify platforms
+grimoire --osint username --osint-platforms github,x
 ```
 
 ### Wi-Fi Wordlist
@@ -194,6 +200,12 @@ grimoire --locale en,tr,de -o locale-words.txt
 
 ```bash
 grimoire --mask "?l?l?l?l?d?d" --policy "min:6 upper:0 digit:1" -o filtered.txt
+```
+
+### Update GRIMOIRE
+
+```bash
+grimoire update  # Automatically pulls latest from GitHub and reinstalls
 ```
 
 ---
