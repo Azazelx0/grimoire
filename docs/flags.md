@@ -36,7 +36,7 @@
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--profile` | string | `""` | Target profile: `"name=John dob=1990 pet=Rex"` |
-| `--alecto` | string | `None` | Search Alecto DB (empty = dump all) |
+| `--default-creds` | string | `None` | Search Default Credentials DB (empty = dump all) |
 | `--improve` | string | `""` | Improve existing wordlist file |
 | `--download` | string | `""` | Download wordlist by category |
 | `--combo` | 2 strings | `None` | Combo attack: two wordlist files |

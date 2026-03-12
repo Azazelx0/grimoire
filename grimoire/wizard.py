@@ -20,7 +20,7 @@ MODES = [
     {"name": "🎯 Profile Target     — CUPP-style personal profiling", "value": "profile"},
     {"name": "📈 Improve Dict       — Mutate an existing wordlist", "value": "improve"},
     {"name": "📥 Download Lists     — Fetch curated wordlists", "value": "download"},
-    {"name": "🔐 Alecto DB          — Default credentials database", "value": "alecto"},
+    {"name": "🔐 Default Creds      — Dynamic Default credentials database", "value": "defcreds"},
     {"name": "🔀 Combo Attack       — Merge two wordlists", "value": "combo"},
     {"name": "🎭 Mask Generator     — Pattern-based generation", "value": "mask"},
     {"name": "🔍 OSINT Scraper      — Social media profiling", "value": "osint"},
@@ -60,7 +60,7 @@ def run() -> tuple[dict, str]:
         "osint": _osint_wizard, "wifi": _wifi_wizard,
         "locale": _locale_wizard, "stats": _stats_wizard,
         "chain": _chain_wizard, "recipe": _recipe_wizard,
-        "markov": _markov_wizard, "alecto": _alecto_wizard,
+        "markov": _markov_wizard, "defcreds": _default_creds_wizard,
     }
 
     wizard_fn = wizards.get(mode)

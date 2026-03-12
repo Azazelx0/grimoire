@@ -42,12 +42,12 @@ Launch interactive target profiling wizard (CUPP-style). Generated words are add
 grimoire❯ profile
 ```
 
-### `alecto [search <vendor>]`
-Browse or search the Alecto default credentials database.
+### `defcreds [search <vendor>]`
+Browse or search the Default Credentials database dynamically fetched from online resources.
 
 ```
-grimoire❯ alecto                  # show all vendors
-grimoire❯ alecto search cisco     # search by vendor
+grimoire❯ defcreds                  # show all vendors
+grimoire❯ defcreds search cisco     # search by vendor
 ```
 
 ### `download <category>`

@@ -69,7 +69,7 @@ Running `grimoire` without flags launches the interactive mode selector:
   🎯 Profile Target     — CUPP-style personal profiling
   📈 Improve Dict       — Mutate an existing wordlist
   📥 Download Lists     — Fetch curated wordlists
-  🔐 Alecto DB          — Default credentials database
+  🔐 Default Creds      — Dynamic default credentials database
   🔀 Combo Attack       — Merge two wordlists
   🎭 Mask Generator     — Pattern-based generation
   🔍 OSINT Scraper      — Social media profiling
@@ -177,11 +177,11 @@ grimoire --recipe recipe.yml
 grimoire --markov-train wordlist.txt --markov-count 50000 -o markov.txt
 ```
 
-### Alecto Default Credentials
+### Default Credentials
 
 ```bash
-grimoire --alecto "cisco"     # Search by vendor
-grimoire --alecto ""          # Dump all
+grimoire --default-creds "cisco"     # Search by vendor
+grimoire --default-creds ""          # Dump all
 ```
 
 ### Wordlist Analysis
@@ -225,7 +225,7 @@ grimoire❯ help
 | `export <file>` | Export wordlist |
 | `mutate [--leet] [--case] [--numbers]` | Apply mutations |
 | `profile` | Launch target profiling |
-| `alecto [search <vendor>]` | Browse default credentials |
+| `defcreds [search <vendor>]` | Browse default credentials |
 | `download <category>` | Download wordlist category |
 | `improve <file>` | Improve existing wordlist |
 | `dedup [--fuzzy]` | Deduplicate |
@@ -256,7 +256,7 @@ grimoire❯ help
 | Markov generator | ❌ | ❌ | ✅ |
 | Policy filter | ❌ | ❌ | ✅ |
 | Email harvesting | ✅ | ❌ | ✅ |
-| Default creds DB | ❌ | ✅ | ✅ (bundled Alecto) |
+| Default creds DB | ❌ | ✅ | ✅ (dynamic fetcher) |
 | Interactive REPL | ❌ | ❌ | ✅ (tab-complete) |
 | Multi-format output | text | text | ✅ (txt/JSON/Hashcat) |
 | Cross-platform | Ruby | Python | ✅ (Python, any OS) |
@@ -279,7 +279,7 @@ grimoire/
 │   ├── extractor.py            # Word/email/meta/JS extraction
 │   ├── mutator/                # Basic + Hashcat rules + combo
 │   ├── profiler.py             # CUPP-style target profiling
-│   ├── alecto.py               # Default credentials DB
+│   ├── default_creds.py        # Default credentials dynamic DB
 │   ├── mask.py                 # Mask/pattern generator
 │   ├── osint.py                # OSINT social scraper
 │   ├── wifi.py                 # Wi-Fi ESSID generator
@@ -291,7 +291,7 @@ grimoire/
 │   ├── markov.py               # Markov chain generator
 │   ├── dedup.py                # Exact + fuzzy dedup
 │   ├── output.py               # txt/json/hashcat writers
-│   └── data/                   # Alecto CSV + locale packs
+│   └── data/                   # Locale packs + fallback data
 ├── docs/                       # Reference documentation
 └── examples/                   # Usage scripts + rule files
 ```

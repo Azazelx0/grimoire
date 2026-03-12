@@ -29,7 +29,7 @@ from grimoire.repl import ReplState, run as run_repl
 @click.option("--append-symbols/--no-append-symbols", default=False, help="Append symbols")
 @click.option("--rule-file", default="", help="Hashcat .rule file path")
 @click.option("--profile", default="", help='Target profile: "name=John dob=1990 pet=Rex"')
-@click.option("--alecto", "alecto_search", default=None, help="Search Alecto DB (vendor name)")
+@click.option("--default-creds", "defcreds_search", default=None, help="Search Default Credentials DB (vendor name, or empty string \"\" for all)")
 @click.option("--improve", "improve_file", default="", help="Improve existing wordlist")
 @click.option("--download", "download_cat", default="", help="Download wordlist category")
 @click.option("--combo", nargs=2, default=None, help="Combo attack: two wordlist files")
@@ -64,8 +64,8 @@ def _cli_main(**kwargs):
         _handle_stats(kwargs["stats_file"])
         return
 
-    if kwargs.get("alecto_search") is not None:
-        _handle_alecto(kwargs["alecto_search"])
+    if kwargs.get("defcreds_search") is not None:
+        _handle_default_creds(kwargs["defcreds_search"])
         return
 
     if kwargs.get("profile"):
@@ -208,8 +208,8 @@ def _execute_wizard_mode(mode, config) -> list[str] | None:
         _handle_download(config.get("category", ""))
         return None
 
-    elif mode == "alecto":
-        _handle_alecto_wizard(config)
+    elif mode == "defcreds":
+        _handle_default_creds_wizard(config)
         return None
 
     elif mode == "combo":
@@ -279,16 +279,16 @@ def _execute_wizard_mode(mode, config) -> list[str] | None:
     return []
 
 
-def _handle_alecto_wizard(config):
-    """Handle the enhanced Alecto wizard with search/list/dump/export."""
-    from grimoire import alecto as a
+def _handle_default_creds_wizard(config):
+    """Handle the dynamic Default Credentials wizard with search/list/dump/export."""
+    from grimoire import default_creds as dc
     from rich.table import Table
 
     action = config.get("action", "dump")
 
     if action == "search":
         vendor = config.get("vendor", "")
-        results = a.search(vendor)
+        results = dc.search(vendor)
         if not results:
             b.warning(f"No entries for: {vendor}")
             return
@@ -302,13 +302,13 @@ def _handle_alecto_wizard(config):
         b.info(f"{len(results)} entries found.")
 
     elif action == "list":
-        vendor_list = a.vendors()
-        b.info(f"Alecto DB: {len(vendor_list)} vendors")
+        vendor_list = dc.vendors()
+        b.info(f"Default Credentials DB: {len(vendor_list)} vendors")
         for v in vendor_list:
             b.console.print(f"  [cyan]•[/cyan] {v}")
 
     elif action == "dump":
-        entries = a.dump()
+        entries = dc.dump()
         table = Table(border_style="cyan")
         table.add_column("Vendor", style="cyan")
         table.add_column("Username", style="green")
@@ -320,8 +320,8 @@ def _handle_alecto_wizard(config):
 
     elif action == "export":
         export_type = config.get("export_type", "Both")
-        output = config.get("output", "alecto-export.txt")
-        entries = a.dump()
+        output = config.get("output", "defcreds-export.txt")
+        entries = dc.dump()
         with open(output, "w", encoding="utf-8") as f:
             for e in entries:
                 if "Username" in export_type:
@@ -420,12 +420,12 @@ def _handle_profile(kw):
     run_repl(ReplState(words=words))
 
 
-def _handle_alecto(vendor):
-    from grimoire import alecto as a
+def _handle_default_creds(vendor):
+    from grimoire import default_creds as dc
     from rich.table import Table
 
     if vendor:
-        results = a.search(vendor)
+        results = dc.search(vendor)
         if not results:
             b.warning(f"No entries for: {vendor}")
             return
@@ -438,7 +438,7 @@ def _handle_alecto(vendor):
         b.console.print(table)
         b.info(f"{len(results)} entries found.")
     else:
-        entries = a.dump()
+        entries = dc.dump()
         table = Table(border_style="cyan")
         table.add_column("Vendor", style="cyan")
         table.add_column("Username", style="green")

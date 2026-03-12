@@ -10,14 +10,14 @@ from grimoire.dedup import exact_dedup, fuzzy_dedup
 from grimoire.mutator.basic import mutate_all, DEFAULT_OPTS
 from grimoire.output import write_file
 from grimoire.profiler import generate as profile_generate
-from grimoire import alecto as alecto_mod
+from grimoire import default_creds as dc_mod
 from grimoire.downloader import list_categories, download
 from grimoire.improver import improve
 from grimoire.stats import analyze, length_histogram
 from grimoire.policy import apply_policy, parse_policy_string
 
 COMMANDS = [
-    "help", "stats", "export", "mutate", "profile", "alecto",
+    "help", "stats", "export", "mutate", "profile", "defcreds",
     "download", "improve", "dedup", "policy", "analyze", "osint",
     "save", "load", "set", "clear", "exit", "quit",
 ]
@@ -70,8 +70,8 @@ def run(state: ReplState):
             _cmd_mutate(state, parts[1:])
         elif cmd == "profile":
             _cmd_profile(state)
-        elif cmd == "alecto":
-            _cmd_alecto(parts[1:])
+        elif cmd == "defcreds":
+            _cmd_defcreds(parts[1:])
         elif cmd == "download":
             if len(parts) < 2:
                 banner.error(f"Usage: download <category>  Available: {', '.join(list_categories())}")
@@ -136,7 +136,7 @@ def _cmd_help():
         ("export <file>", "Export wordlist to file"),
         ("mutate [--leet --case --numbers --symbols]", "Apply mutations"),
         ("profile", "Launch target profiling"),
-        ("alecto [search <vendor>]", "Browse Alecto DB"),
+        ("defcreds [search <vendor>]", "Browse Default Creds"),
         ("download <category>", "Download wordlist category"),
         ("improve <file>", "Enhance existing wordlist"),
         ("dedup [--fuzzy]", "Deduplicate wordlist"),
@@ -247,10 +247,10 @@ def _cmd_profile(state: ReplState):
     banner.success(f"Profile generated {len(words)} words. Total: {len(state.words)}")
 
 
-def _cmd_alecto(args: list[str]):
+def _cmd_defcreds(args: list[str]):
     if len(args) >= 2 and args[0] == "search":
         vendor = " ".join(args[1:])
-        results = alecto_mod.search(vendor)
+        results = dc_mod.search(vendor)
         if not results:
             banner.warning(f"No entries found for: {vendor}")
             return
@@ -267,11 +267,11 @@ def _cmd_alecto(args: list[str]):
         banner.info(f"{len(results)} entries found.")
         banner.console.print()
     else:
-        entries = alecto_mod.dump()
-        vendor_list = alecto_mod.vendors()
-        banner.info(f"Alecto DB: {len(entries)} entries, {len(vendor_list)} vendors")
+        entries = dc_mod.dump()
+        vendor_list = dc_mod.vendors()
+        banner.info(f"Default Creds DB: {len(entries)} entries, {len(vendor_list)} vendors")
         banner.dim(f"Vendors: {', '.join(vendor_list)}")
-        banner.dim("Use 'alecto search <vendor>' to filter.")
+        banner.dim("Use 'defcreds search <vendor>' to filter.")
 
 
 def _cmd_download(category: str):
