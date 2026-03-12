@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-03-12
+### Fixed
+- Fixed an issue where accessing the Default Credentials module from the interactive wizard menu would crash (`NameError`) due to an orphaned function reference during migration.
+
 ## [2.2.0] - 2026-03-12
 ### Added
 - **Dynamic Default Credentials**: Migrated the static `alecto.py` database to a dynamic module (`default_creds.py`) that fetches records from GitHub/online cheat sheets.

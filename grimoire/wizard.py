@@ -336,8 +336,8 @@ def _download_wizard() -> dict:
     }
 
 
-def _alecto_wizard() -> dict:
-    banner.console.print("\n  [bold cyan]── Alecto Default Credentials ──[/bold cyan]\n")
+def _default_creds_wizard() -> dict:
+    banner.console.print("\n  [bold cyan]── Default Credentials ──[/bold cyan]\n")
     action = questionary.select(
         "What to do?",
         choices=[
