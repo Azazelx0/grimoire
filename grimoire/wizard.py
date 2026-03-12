@@ -358,7 +358,7 @@ def _default_creds_wizard() -> dict:
             choices=["Usernames only", "Passwords only", "Both (CSV format)"],
             style=GRIMOIRE_STYLE,
         ).ask() or "Both (CSV format)"
-        config["output"] = questionary.text("Output file:", default="alecto-export.txt", style=GRIMOIRE_STYLE).ask() or "alecto-export.txt"
+        config["output"] = questionary.text("Output file:", default="defcreds-export.txt", style=GRIMOIRE_STYLE).ask() or "defcreds-export.txt"
     return config
 
 
