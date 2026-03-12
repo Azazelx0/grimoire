@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-03-12
+### Fixed
+- Fixed the interactive Default Credentials menu where selecting "List all vendors" simply printed text and quit. It now opens an interactive, searchable menu allowing the user to select a vendor to view its specific credentials.
+
 ## [2.2.2] - 2026-03-12
 ### Changed
 - Fixed leftover `alecto` references in wizard export defaults and example scripts after transitioning to the dynamic Default Credentials module.

@@ -352,6 +352,20 @@ def _default_creds_wizard() -> dict:
     config = {"action": action}
     if action == "search":
         config["vendor"] = questionary.text("Vendor name to search:", style=GRIMOIRE_STYLE).ask() or ""
+    elif action == "list":
+        from grimoire import default_creds as dc
+        vendors = dc.vendors()
+        vendor = questionary.select(
+            "Select a vendor to view:",
+            choices=vendors,
+            style=GRIMOIRE_STYLE,
+            use_indicator=True
+        ).ask()
+        if vendor:
+            config["action"] = "search"
+            config["vendor"] = vendor
+        else:
+            config["action"] = "none" # user aborted
     elif action == "export":
         config["export_type"] = questionary.select(
             "Export what?",
